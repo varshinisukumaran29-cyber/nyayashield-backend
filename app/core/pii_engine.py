@@ -311,7 +311,42 @@ def detect_pii_entities(text: str) -> List[Dict[str, Any]]:
                 continue
             if len(person_name) > 3 and not re.match(r'^(Section|Article|Court|Bench|State|Union|Police|Act|Order|Judgment)$', person_name, re.IGNORECASE):
                 detected.append(PIIEntityMatch(person_name, "PERSON_NAME", span_start, span_end, 0.91, "Personal name identified via Indian legal structural and honorific patterns"))
+    # 15. Role-labelled names in Indian legal documents
+        role_name_pattern = re.compile(
+        r'\b(?:Petitioner|Respondent|Appellant|Complainant|Accused|Victim|Witness)[ \t]*:[ \t]*'
+        r'([A-Z][a-z]+(?:[ \t]+[A-Z][a-z]+){1,3})\b',
+        re.IGNORECASE
+    ) 
+    for m in role_name_pattern.finditer(text):
+        name = m.group(1)
+        start, end = m.span(1)
 
+        if not is_in_exclusion(start, end, exclusion_spans):
+            detected.append(
+                PIIEntityMatch(
+                    name, "PERSON_NAME", start, end, 0.93,
+                    "Personal name identified from legal party role"
+                )
+            )
+
+    # 16. Residential addresses following 'resides at'
+    residence_pattern = re.compile(
+        r'\b(?:resides?\s+at|residing\s+at|lives?\s+at)\s+'
+        r'(\d+[A-Za-z/-]*\s+[^.;\n]{5,100})',
+        re.IGNORECASE
+    )
+
+    for m in residence_pattern.finditer(text):
+        address = m.group(1).strip()
+        start, end = m.span(1)
+
+        if not is_in_exclusion(start, end, exclusion_spans):
+            detected.append(
+                PIIEntityMatch(
+                    address, "RESIDENTIAL_ADDRESS", start, end, 0.90,
+                    "Residential address identified from contextual phrase"
+                )
+            )
     # Resolve overlapping entities (keep highest confidence or widest span)
     resolved: List[PIIEntityMatch] = []
     detected.sort(key=lambda x: (x.start, -(x.end - x.start), -x.confidence))
