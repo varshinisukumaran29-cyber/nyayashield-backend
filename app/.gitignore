@@ -1,0 +1,25 @@
+# Python environment
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Private databases and documents
+data/
+uploads/
+exports/
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+
+# Secrets and logs
+.env
+.env.*
+*.log
+err.txt
+out.txt
+
+# Editor settings
+.vscode/
